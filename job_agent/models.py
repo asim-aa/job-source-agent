@@ -23,11 +23,8 @@ class JobPosting:
 
 @dataclass(frozen=True)
 class PipelineResult:
-    """Final CSV row: company name, career page URL, open position URL."""
+    """Final output row: company name, career page URL, open position URL."""
 
     company_name: str
     career_page_url: str
     job_url: str
-
-    def to_csv_row(self) -> str:
-        return f"{self.company_name},{self.career_page_url},{self.job_url}"

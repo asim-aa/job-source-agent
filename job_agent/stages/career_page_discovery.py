@@ -19,25 +19,14 @@ run that's processing many companies.
 
 from __future__ import annotations
 
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
-import requests
 from bs4 import BeautifulSoup
 
+from job_agent.html_utils import extract_links as _extract_links
+from job_agent.html_utils import fetch as _fetch
 from job_agent.llm import call_llm
 from job_agent.models import CareerPage, Company
-
-REQUEST_TIMEOUT = 10
-REQUEST_HEADERS = {
-    # A default python-requests UA gets blocked by some sites; identify as a
-    # real-looking browser instead.
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36 JobSourceAgent/0.1"
-    )
-}
-MAX_LINKS_FOR_LLM = 250
-MAX_ANCHOR_TEXT_LEN = 80
 
 COMMON_CAREER_PATHS = [
     "/careers", "/careers/", "/jobs", "/jobs/", "/join-us", "/join-us/",
@@ -46,48 +35,10 @@ COMMON_CAREER_PATHS = [
 ]
 
 
-def _fetch(url: str) -> str | None:
-    try:
-        response = requests.get(
-            url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT, allow_redirects=True
-        )
-    except requests.RequestException as e:
-        print(f"WARNING: couldn't fetch {url}: {e}")
-        return None
-    if response.status_code != 200:
-        return None
-    return response.text
-
-
-def _extract_links(html: str, base_url: str) -> list[tuple[str, str]]:
-    soup = BeautifulSoup(html, "html.parser")
-    seen: set[str] = set()
-    links: list[tuple[str, str]] = []
-
-    for a in soup.find_all("a", href=True):
-        href = a["href"].strip()
-        if not href or href.startswith(("mailto:", "tel:", "javascript:", "#")):
-            continue
-
-        absolute = urljoin(base_url, href)
-        if not absolute.startswith(("http://", "https://")):
-            continue
-        if absolute in seen:
-            continue
-        seen.add(absolute)
-
-        text = a.get_text(strip=True)[:MAX_ANCHOR_TEXT_LEN]
-        links.append((text, absolute))
-
-        if len(links) >= MAX_LINKS_FOR_LLM:
-            break
-
-    return links
-
-
 def _classify_homepage_links(links: list[tuple[str, str]], company_name: str) -> str | None:
-    """Asks the LLM to pick the careers link. Rejects any reply that isn't an
-    exact match to one of the candidate URLs, to guard against hallucination."""
+    """Asks the LLM to pick the careers link. Rejects any reply whose URL
+    isn't an exact match to one of the candidates, to guard against
+    hallucination."""
     if not links:
         return None
 
@@ -107,9 +58,18 @@ def _classify_homepage_links(links: list[tuple[str, str]], company_name: str) ->
     if not reply:
         return None
 
-    reply = reply.strip()
+    # Scan every line rather than requiring the whole reply to equal a
+    # candidate: smaller/reasoning models don't reliably follow "respond with
+    # ONLY the URL" and sometimes wrap it in extra text or enumerate one
+    # verdict per candidate — the correct URL on its own line is still the
+    # correct URL.
     valid_urls = {url for _, url in links}
-    return reply if reply in valid_urls else None
+    for line in reply.strip().splitlines():
+        line = line.strip()
+        if line in valid_urls:
+            return line
+
+    return None
 
 
 def _verify_career_page(url: str, company_name: str) -> bool:
@@ -136,7 +96,20 @@ def _verify_career_page(url: str, company_name: str) -> bool:
     )
 
     reply = call_llm(prompt)
-    return bool(reply) and reply.strip().upper().startswith("YES")
+    if not reply:
+        return False
+
+    # Same defensive line-scan as _classify_homepage_links: take the first
+    # line that's decisively YES or NO, rather than assuming the whole reply
+    # is exactly one word.
+    for line in reply.strip().splitlines():
+        line = line.strip().upper()
+        if line.startswith("YES"):
+            return True
+        if line.startswith("NO"):
+            return False
+
+    return False
 
 
 def _guess_common_paths(homepage_url: str, company_name: str) -> str | None:

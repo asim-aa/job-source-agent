@@ -5,6 +5,4 @@ beautifulsoup4==4.12.3
 anthropic==0.39.0
 openai==2.53.0
 ddgs==9.0.0
-
-# Added in a later phase, not needed yet:
-# playwright        # Phase 4: browser automation, if job_extraction needs JS-rendered pages
+playwright==1.48.0

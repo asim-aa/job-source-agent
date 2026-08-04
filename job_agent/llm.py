@@ -18,8 +18,10 @@ from dotenv import load_dotenv
 ANTHROPIC_MODEL = "claude-sonnet-4-5"
 SUPPORTVECTORS_DEFAULT_MODEL = "openai/gpt-oss-20b"
 MAX_TOKENS = 512
-# Reasoning models need much more headroom — reasoning + answer share one budget.
-SUPPORTVECTORS_MAX_TOKENS = 2048
+# Reasoning models need much more headroom — reasoning + answer share one
+# budget, and stage 4's classification prompt can list 100+ links, which
+# burns through a lot of it before the model gets to the answer.
+SUPPORTVECTORS_MAX_TOKENS = 8192
 
 
 def _call_anthropic(prompt: str) -> str | None:
@@ -39,6 +41,7 @@ def _call_anthropic(prompt: str) -> str | None:
         response = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=MAX_TOKENS,
+            temperature=0,  # classification, not creative writing — want the same answer every time
             messages=[{"role": "user", "content": prompt}],
         )
     except anthropic.AuthenticationError:
@@ -82,6 +85,7 @@ def _call_supportvectors(prompt: str) -> str | None:
         response = client.chat.completions.create(
             model=model,
             max_tokens=SUPPORTVECTORS_MAX_TOKENS,
+            temperature=0,  # classification, not creative writing — want the same answer every time
             messages=[{"role": "user", "content": prompt}],
         )
     except Exception as e:
