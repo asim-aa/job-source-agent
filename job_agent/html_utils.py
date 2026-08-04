@@ -18,6 +18,14 @@ REQUEST_HEADERS = {
 }
 MAX_LINKS_FOR_LLM = 250
 MAX_ANCHOR_TEXT_LEN = 80
+# Large marketing/mega-menu sites (e.g. salesforce.com, 380+ links on its
+# careers page) can bury the actual "Search jobs" link past position 250 in
+# document order, so it never reaches the LLM at all if links are truncated
+# blindly. Anything matching these keywords is kept regardless of position.
+JOB_KEYWORDS = (
+    "job", "career", "position", "opening", "hiring", "apply", "role",
+    "join-us", "join us", "vacan", "recruit",
+)
 
 
 def fetch(url: str) -> str | None:
@@ -55,7 +63,14 @@ def extract_links(
         text = a.get_text(strip=True)[:MAX_ANCHOR_TEXT_LEN]
         links.append((text, absolute))
 
-        if len(links) >= max_links:
-            break
+    if len(links) <= max_links:
+        return links
 
-    return links
+    def is_job_related(link: tuple[str, str]) -> bool:
+        text, url = link
+        haystack = f"{text} {url}".lower()
+        return any(keyword in haystack for keyword in JOB_KEYWORDS)
+
+    priority = [link for link in links if is_job_related(link)]
+    rest = [link for link in links if not is_job_related(link)]
+    return (priority + rest)[:max_links]

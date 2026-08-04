@@ -1,0 +1,14 @@
+[
+  {"name": "Anthropic", "website": "https://www.anthropic.com", "note": "Greenhouse, confirmed working (Phase 4/5 live test)"},
+  {"name": "Stripe", "website": "https://stripe.com", "note": "in-house job board, one-hop listing (Phase 4/5 live test)"},
+  {"name": "Figma", "website": "https://www.figma.com", "note": "Greenhouse, confirmed working (Phase 4/5 live test)"},
+  {"name": "Notion", "website": "https://www.notion.so", "note": "Ashby, confirmed working (Phase 4/5 live test)"},
+  {"name": "Duolingo", "website": "https://www.duolingo.com", "note": "in-house job board, no hop needed (Phase 4/5 live test)"},
+  {"name": "Netlify", "website": "https://www.netlify.com", "note": "Lever — untested ATS"},
+  {"name": "Vercel", "website": "https://vercel.com", "note": "Ashby — second Ashby company for regression"},
+  {"name": "Robinhood", "website": "https://robinhood.com", "note": "Greenhouse — second Greenhouse company for regression"},
+  {"name": "Basecamp", "website": "https://basecamp.com", "note": "simple static site, in-house board, no ATS"},
+  {"name": "Shopify", "website": "https://www.shopify.com", "note": "heavy JS/SPA marketing site, separate careers subsite"},
+  {"name": "Nike", "website": "https://www.nike.com", "note": "mega-menu marketing site, careers likely a separate subsite"},
+  {"name": "Salesforce", "website": "https://www.salesforce.com", "note": "Workday — untested ATS, large enterprise mega-nav site"}
+]

@@ -229,11 +229,28 @@ def _classify_job_link(
 
 
 PLAYWRIGHT_NAV_TIMEOUT_MS = 20_000
-# domcontentloaded fires before client-side JS has rendered content, so this
-# fixed pause gives SPAs a chance to populate the DOM. "networkidle" was tried
-# first but is unreliable in practice: pages with continuous background
-# polling (analytics beacons, etc.) never go idle and just time out.
-PLAYWRIGHT_RENDER_WAIT_MS = 2_000
+# domcontentloaded fires before client-side JS has rendered content. A single
+# fixed pause was tried first but proved unreliable: Robinhood's careers page
+# (Greenhouse-backed) loads its job list widget on a variable delay — a fixed
+# 2s pause sometimes caught it and sometimes didn't, non-deterministically.
+# "networkidle" was tried before that and is worse: pages with continuous
+# background polling (analytics beacons, etc.) never go idle and just time
+# out. Polling until the link count stabilizes handles both cases: fast pages
+# don't pay extra wait, slow ones get the time they actually need.
+PLAYWRIGHT_POLL_INTERVAL_MS = 500
+PLAYWRIGHT_MAX_SETTLE_WAIT_MS = 6_000
+
+
+def _wait_for_content_to_settle(page) -> None:
+    last_count = -1
+    elapsed = 0
+    while elapsed < PLAYWRIGHT_MAX_SETTLE_WAIT_MS:
+        page.wait_for_timeout(PLAYWRIGHT_POLL_INTERVAL_MS)
+        elapsed += PLAYWRIGHT_POLL_INTERVAL_MS
+        count = page.evaluate("document.querySelectorAll('a').length")
+        if count == last_count:
+            return
+        last_count = count
 
 
 def _render_with_playwright(url: str) -> str | None:
@@ -252,7 +269,7 @@ def _render_with_playwright(url: str) -> str | None:
             try:
                 page = browser.new_page(user_agent=REQUEST_HEADERS["User-Agent"])
                 page.goto(url, timeout=PLAYWRIGHT_NAV_TIMEOUT_MS, wait_until="domcontentloaded")
-                page.wait_for_timeout(PLAYWRIGHT_RENDER_WAIT_MS)
+                _wait_for_content_to_settle(page)
                 return page.content()
             finally:
                 browser.close()

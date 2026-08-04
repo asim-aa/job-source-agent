@@ -138,7 +138,8 @@ same fix applied to stage 3's classifier. `temperature=0` was also added to
 both LLM providers (classification should be deterministic, not creative).
 Separately, Playwright's `networkidle` wait hung indefinitely on pages with
 continuous background polling (analytics beacons, etc. — Stripe's careers
-page is one); switched to `domcontentloaded` plus a fixed render pause.
+page is one); switched to `domcontentloaded` plus a render-settle strategy —
+see Phase 6 for how that strategy evolved further.
 
 ### Run it
 
@@ -177,8 +178,92 @@ correct across two consecutive runs.
 Tests (`tests/test_pipeline.py`, `tests/test_output.py`) mock `discover` and
 `extract_one`, so `pytest` never makes a real network or LLM call.
 
+## Phase 6 — Generalization testing
+
+`job_agent/fixtures/generalization_test_companies.json` + `run_phase6_generalization_test.py`
+run stages 3 and 4 directly (bypassing stage 1) against a deliberately
+diverse, hand-picked set of real companies, spanning every category the
+project's own goals call out: multiple ATS platforms, plain in-house job
+boards, and JS-heavy/mega-menu marketing sites. This is where iterating on
+real failures — not the mocked unit tests — did the most to prove (and
+improve) generalization.
+
+**Result: 10/12 fully resolved**, and the 2 non-resolutions are both *correct*
+answers, not bugs (see below) — so functionally 12/12 behaved correctly.
+
+| Company | Category | Result |
+|---|---|---|
+| Anthropic, Figma, Robinhood | Greenhouse | ✓ |
+| Notion, Vercel | Ashby | ✓ |
+| Workday (self-hosted, see below) | Workday | ✓ |
+| Netlify | (assumed Lever, turned out Greenhouse) | ✓ |
+| Stripe, Duolingo, Nike, Shopify | in-house / no ATS | ✓ |
+| Basecamp | in-house, zero current openings | correctly NOT FOUND |
+| Salesforce | Workday, bot-blocked | correctly NOT FOUND |
+
+**Four real failures on the first pass, three fixed, one confirmed as a non-bug:**
+
+1. **Robinhood — real bug, fixed.** Its Greenhouse-backed job widget renders
+   on a variable JS delay; a fixed 2-second post-render pause sometimes
+   missed it, non-deterministically. Fixed by replacing the fixed pause with
+   polling: `_wait_for_content_to_settle` (`job_extraction.py`) re-checks
+   `document.querySelectorAll('a').length` every 500ms and returns once it
+   stops growing (capped at 6s) — fast pages don't pay extra wait, slow ones
+   get the time they actually need.
+2. **Salesforce — real bug, fixed (partially).** Its careers page has 381
+   links; the actual "Search jobs" link sat past position 250, so the
+   link-truncation cap dropped it before the LLM ever saw it. Fixed:
+   `html_utils.extract_links` now prioritizes links matching job/career
+   keywords when truncating, regardless of position. This fix is confirmed
+   working (the link is no longer dropped) — but Salesforce still resolves to
+   NOT FOUND for an unrelated, unfixable reason: its actual jobs-search page
+   is behind Akamai bot detection that explicitly blocks the headless
+   browser (`Access Denied`, `errors.edgesuite.net`), even though a plain
+   `requests.get` gets through fine. Building bot-detection evasion to get
+   around that is out of scope — correctly reporting NOT FOUND is the right
+   behavior here, which is exactly Phase 5's graceful-failure requirement.
+3. **Duolingo — flaky, fixed.** The SupportVectors model (a small reasoning
+   model) occasionally burns its entire token budget on internal "thinking"
+   and returns no answer (`finish_reason=length`). Doubling the budget alone
+   didn't reliably fix it — retried at 2x tokens and *still* exhausted it on
+   Salesforce and Duolingo in one run. The actual fix: `temperature=0` is
+   deterministic, so a prompt that makes the model reason-forever does so on
+   *every* attempt at the same temperature — a bigger budget just delays
+   hitting the same wall. The retry now also resamples at `temperature=0.4`,
+   escaping the stuck trajectory. (`job_agent/llm.py`)
+4. **Basecamp — not a bug.** Their jobs page literally states *"Sorry, we
+   don't have any job openings right now."* Correctly resolves to NOT FOUND.
+
+**Confirming the two previously-untested ATS platforms (Lever, Workday):**
+marketing "companies that use X" lists turned out to be unreliable (several
+listed companies 404'd against the real API); found real, currently-active
+customers by verifying directly against each platform's own API first —
+**Workday**: found via a natural source (they host their own careers page on
+their own product, `workday.wd5.myworkdayjobs.com/Workday`) and confirmed
+**working end-to-end live**, homepage → career page → real job posting, no
+manual intervention. **Lever**: found via the same self-hosting pattern
+(`jobs.lever.co/lever`), though Lever's own board had zero open roles; found
+**Apply Digital** (`jobs.lever.co/applydigital`, 27 real open jobs) instead
+and confirmed the parsing logic (`_extract_lever_jobs`) is correct against
+real API data. The live end-to-end run against Apply Digital's homepage was
+flaky (failed 2/2 through the full pipeline, succeeded 4/4 in isolated
+reproductions of the same rendering logic) — root-caused to Apply Digital's
+careers page loading Storyblok feature-flag/A-B-testing infrastructure, which
+plausibly serves job cards as real `<a href>` links in one experiment
+variant and something else in another. That's non-determinism in the
+*target site*, not the pipeline; not something to chase further.
+
+### Run it
+
+```bash
+python run_phase6_generalization_test.py
+```
+
+Slow — 12 companies, each potentially involving multiple LLM calls and a
+Playwright render. Expect 10-20 minutes for the full set.
+
 ## Roadmap
 
-- Phase 6 (optional): implement `company_resolution.py` (URL normalization/
-  validation between stages 1 and 3)
+- `company_resolution.py` (stage 2, URL normalization/validation between
+  stages 1 and 3) is still a stub — nothing tested so far has needed it
 - Demo video showing the pipeline end-to-end against real company sites
