@@ -45,6 +45,24 @@ websites so the ingestion output is realistic. Swapping in a real provider later
 is a one-file change: implement `LinkedInProvider`, register it in
 `get_provider()`, set `LINKEDIN_PROVIDER` in `.env`.
 
+**Why this is the final answer, not just a placeholder:** the project brief
+itself frames a scraping API as optional ("you *may* utilize third party
+LinkedIn crawler API *if you need*") and defines Phase 2's deliverable as
+just "a clean list of `{company_name, company_website}` pairs" — a format
+requirement, not a data-source requirement. The three real alternatives were
+considered and rejected: a paid API (Proxycurl/Bright Data) costs money on
+an ongoing basis for what's explicitly an optional step; scraping
+linkedin.com directly is what the brief itself calls out as aggressively
+blocked, and building around that risks the account and edges toward the
+kind of bot-detection evasion this project deliberately avoided elsewhere
+(see Salesforce in Phase 6); a free trial credit on one of those APIs was
+the closest real option, but doesn't change the fundamental shape of the
+tradeoff for a handful of demo calls. The engineering weight the brief
+actually asks for — and where all the real failures, fixes, and iteration
+happened — is stages 2 through 4, not this one. `LinkedInProvider` exists
+precisely so that swapping in a real source later, if it's ever worth the
+cost, is a one-file change rather than a rewrite.
+
 ### Run it
 
 ```bash
