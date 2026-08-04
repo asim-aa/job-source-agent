@@ -1,0 +1,62 @@
+[
+  {
+    "job_title": "Software Engineer, Applied AI",
+    "company_name": "Anthropic",
+    "company_website": "https://www.anthropic.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345001"
+  },
+  {
+    "job_title": "Backend Engineer, Payments Infrastructure",
+    "company_name": "Stripe",
+    "company_website": "https://stripe.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345002"
+  },
+  {
+    "job_title": "Product Designer",
+    "company_name": "Figma",
+    "company_website": "https://www.figma.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345003"
+  },
+  {
+    "job_title": "Software Engineer, Data Platform",
+    "company_name": "Notion Labs",
+    "company_website": "https://www.notion.so",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345004"
+  },
+  {
+    "job_title": "Machine Learning Engineer",
+    "company_name": "Duolingo",
+    "company_website": "https://www.duolingo.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345005"
+  },
+  {
+    "job_title": "Software Engineer, Search Infrastructure",
+    "company_name": "Airbnb",
+    "company_website": "https://www.airbnb.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345006"
+  },
+  {
+    "job_title": "Data Scientist, Marketplace",
+    "company_name": "Airbnb",
+    "company_website": "https://www.airbnb.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345007"
+  },
+  {
+    "job_title": "Solutions Architect",
+    "company_name": "Databricks",
+    "company_website": "https://www.databricks.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345008"
+  },
+  {
+    "job_title": "Software Engineer, Card Platform",
+    "company_name": "Ramp",
+    "company_website": "https://ramp.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345009"
+  },
+  {
+    "job_title": "Frontend Engineer",
+    "company_name": "Ramp",
+    "company_website": "https://ramp.com",
+    "linkedin_job_url": "https://www.linkedin.com/jobs/view/3812345010"
+  }
+]

@@ -1,0 +1,7 @@
+python-dotenv==1.0.1
+pytest==8.3.3
+
+# Added in later phases, not needed yet:
+# playwright        # Phase 3/4: browser automation for career-page/job discovery
+# anthropic         # Phase 3/4: LLM-driven link selection when heuristics fail
+# requests          # Phase 2, once a real LinkedIn provider replaces the mock
