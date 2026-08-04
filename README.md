@@ -17,16 +17,15 @@ not an agent framework. The only "agent" behavior — an LLM deciding which link
 on a page to follow — is scoped to stage 3; the loop that calls stage 1 then 2
 then 3 then 4 is ordinary code.
 
-**Web agent stack (stage 3, later phase):** heuristic first, LLM fallback.
-Crawl the homepage, look for nav links whose text/href matches
-`careers|jobs|join-us`-style patterns; only when that finds nothing, hand the
-page to an LLM (Claude) driving Playwright to pick the right link. Heuristic-first
-keeps the common case fast and free; the LLM fallback is what makes the pipeline
-"generic across different site formats" per the project's stated goal, instead of
-hand-tuning selectors per company.
+**Web agent stack (stage 3):** LLM-first, not regex-heuristic-first — see
+Phase 3 below for why. Homepages are fetched as static HTML (`requests` +
+BeautifulSoup), not rendered with Playwright/a browser; that's a reasonable
+later upgrade if a company's nav is client-side-rendered and the static fetch
+comes back without the careers link in the HTML at all.
 
-**Stages 2-4 are stubbed** (`NotImplementedError` with a docstring) — this repo
-currently implements Phase 1 (this scaffold) and Phase 2 (stage 1) only.
+**Stages 2 and 4 are stubbed** (`NotImplementedError` with a docstring) — this
+repo currently implements Phase 1 (this scaffold), Phase 2 (stage 1), and
+Phase 3 (stage 3).
 
 ## Phase 2 — LinkedIn ingestion
 
@@ -59,10 +58,50 @@ Runs the tests:
 pytest
 ```
 
+## Phase 3 — Career page discovery
+
+`job_agent/stages/career_page_discovery.py`'s `discover(company) -> CareerPage | None`
+runs a three-step fallback chain, cheapest/most-reliable signal first:
+
+1. **Homepage link classification.** Fetch the homepage, extract every
+   `(anchor text, absolute URL)` pair, hand the whole list to an LLM and ask
+   which one is the careers page. The LLM's reply is only accepted if it
+   exactly matches one of the candidate URLs — a free-text reply that doesn't
+   match anything actually on the page is treated as a hallucination, not a
+   result.
+2. **Common path guesses.** If nothing on the homepage matched, try
+   `/careers`, `/jobs`, `/join-us`, etc. against the domain. Each one that
+   responds gets a second LLM call — title/headings/body snippet — asking
+   "is this actually a careers page?" before it's accepted; unlike step 1,
+   a 200 response alone isn't good enough evidence.
+3. **Search fallback.** If path guessing also comes up empty, search
+   DuckDuckGo (via the `ddgs` package — no API key, same zero-vendor-risk
+   call as the Phase 2 LinkedIn mock) for `site:domain careers` and
+   LLM-verify the top results the same way as step 2.
+
+**LLM backend:** `job_agent/llm.py`, same two-provider pattern as the sibling
+Spotify project's `insights.py` — `LLM_PROVIDER=anthropic` (default) or
+`supportvectors` (an OpenAI-compatible gateway, e.g. a bootcamp-provided
+endpoint), picked via env var, never silently falling back from one to the
+other. Every LLM call returns `None` with a printed warning on failure
+(missing key, rate limit, network error, empty response) instead of raising,
+so one bad classification degrades to "couldn't find a careers page for X"
+rather than crashing a run over many companies.
+
+### Run it
+
+```bash
+# needs ANTHROPIC_API_KEY (or the SUPPORTVECTORS_* vars) set in .env
+python run_phase3_demo.py
+python run_phase3_demo.py --query "engineer" --limit 3
+```
+
+Tests (`tests/test_career_page_discovery.py`) mock both `_fetch` and
+`call_llm`, so `pytest` never makes a real network or LLM call.
+
 ## Roadmap
 
-- Phase 3: implement `company_resolution.py` (URL normalization/validation) and
-  `career_page_discovery.py` (heuristic crawl + LLM/Playwright fallback)
-- Phase 4: implement `job_extraction.py`, wire all four stages together in
-  `pipeline.py`, emit the final CSV
+- Phase 4: implement `job_extraction.py` (careers page -> one open position's
+  URL) and `company_resolution.py` (URL normalization/validation), wire all
+  four stages together in `pipeline.py`, emit the final CSV
 - Phase 5: demo video showing the pipeline end-to-end against real company sites
