@@ -280,8 +280,11 @@ python run_phase6_generalization_test.py
 Slow — 12 companies, each potentially involving multiple LLM calls and a
 Playwright render. Expect 10-20 minutes for the full set.
 
-## Roadmap
+## Status
 
-- `company_resolution.py` (stage 2, URL normalization/validation between
-  stages 1 and 3) is still a stub — nothing tested so far has needed it
-- Demo video showing the pipeline end-to-end against real company sites
+Demo video recorded, showing the pipeline end-to-end against real company
+sites (script in [DEMO_SCRIPT.md](DEMO_SCRIPT.md)).
+
+**Open item:** `company_resolution.py` (stage 2, URL normalization/
+validation between stages 1 and 3) is still a stub — nothing tested so far
+has needed it.
