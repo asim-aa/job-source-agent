@@ -1,7 +1,7 @@
 # AI Job Source Agent
 
 Turns LinkedIn job postings into direct links to the same jobs on each company's
-own career page: `company_name, career_page_url, open_position_url`.
+own career page: `company_name, career_page_url, job_url`.
 
 ## Demo video
 
@@ -29,10 +29,10 @@ BeautifulSoup), not rendered with Playwright/a browser; that's a reasonable
 later upgrade if a company's nav is client-side-rendered and the static fetch
 comes back without the careers link in the HTML at all.
 
-**Stage 2 is stubbed** (`NotImplementedError` with a docstring) — this repo
-currently implements Phase 1 (this scaffold), Phase 2 (stage 1), Phase 3
-(stage 3), and Phase 4 (stage 4). The pipeline goes straight from ingestion to
-career page discovery on the raw (name, website) LinkedIn returned.
+**Stage 2 is stubbed** (`NotImplementedError` with a docstring) — every other
+phase (1 through 6, including generalization testing and the demo video) is
+complete. The pipeline goes straight from ingestion to career page discovery
+on the raw (name, website) pair LinkedIn returned.
 
 ## Phase 2 — LinkedIn ingestion
 
@@ -73,6 +73,7 @@ cost, is a one-file change rather than a rewrite.
 
 ```bash
 pip install -r requirements.txt
+cp .env.example .env   # then fill in an LLM key — needed from Phase 3 onward, not this phase
 python run_phase2_demo.py
 python run_phase2_demo.py --query "engineer" --limit 5
 ```
@@ -168,7 +169,8 @@ see Phase 6 for how that strategy evolved further.
 ### Run it
 
 ```bash
-# needs playwright's browser binary installed once:
+# needs ANTHROPIC_API_KEY (or the SUPPORTVECTORS_* vars) set in .env, and
+# playwright's browser binary installed once:
 playwright install chromium
 python run_phase4_demo.py   # career page -> job URL only, no CSV
 ```
