@@ -3,6 +3,9 @@
 Turns LinkedIn job postings into direct links to the same jobs on each company's
 own career page: `company_name, career_page_url, open_position_url`.
 
+**[Demo video](demo/demo_video.mov)** — end-to-end walkthrough against real
+company sites (script: [DEMO_SCRIPT.md](DEMO_SCRIPT.md)).
+
 ## Phase 1 — Scope & architecture
 
 **Pipeline: four discrete stages**, each its own module under `job_agent/stages/`:
@@ -283,7 +286,8 @@ Playwright render. Expect 10-20 minutes for the full set.
 ## Status
 
 Demo video recorded, showing the pipeline end-to-end against real company
-sites (script in [DEMO_SCRIPT.md](DEMO_SCRIPT.md)).
+sites: [demo/demo_video.mov](demo/demo_video.mov) (script in
+[DEMO_SCRIPT.md](DEMO_SCRIPT.md)).
 
 **Open item:** `company_resolution.py` (stage 2, URL normalization/
 validation between stages 1 and 3) is still a stub — nothing tested so far
