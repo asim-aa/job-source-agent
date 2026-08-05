@@ -290,6 +290,12 @@ Playwright render. Expect 10-20 minutes for the full set.
 
 ## Status
 
-**Open item:** `company_resolution.py` (stage 2, URL normalization/
-validation between stages 1 and 3) is still a stub — nothing tested so far
-has needed it.
+- [x] Phase 1 — scope & architecture
+- [x] Phase 2 — LinkedIn ingestion (mock provider, documented decision — see above)
+- [x] Phase 3 — career page discovery
+- [x] Phase 4 — open position extraction
+- [x] Phase 5 — output formatting & aggregation
+- [x] Phase 6 — generalization testing (10/12 real companies live-verified)
+- [x] Demo video
+- [ ] `company_resolution.py` (stage 2, URL normalization/validation between
+      stages 1 and 3) — still a stub, nothing tested so far has needed it
